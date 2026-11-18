@@ -153,7 +153,7 @@ static void updatePlayer(void) {
     if (p.x < 16) p.x = 16;
     if (p.x > 292) p.x = 292;
     if ((buttons & BUTTON_C) && !(previousButtons & BUTTON_C)) {
-        if ((buttons & BUTTON_B) || (buttons & BUTTON_A)) startAttack(3);
+        if ((buttons & BUTTON_A) && (buttons & BUTTON_B)) startAttack(3);
         else p.guard = 1;
     }
     if (!(buttons & BUTTON_C)) p.guard = 0;
