@@ -50,7 +50,7 @@ static const u16 pal1[16] = {
 static u16 tileId(u16 color) { return TILE_USER_INDEX + color; }
 static void putTile(u16 x, u16 y, u16 tile, u16 pal) {
     if (buildingBackground && x < 40 && y < 28) bgTiles[y * 40 + x] = (u8)tile;
-    VDP_setTileMapXY(VDP_BG_A, TILE_ATTR_FULL(pal, TRUE, FALSE, FALSE, tileId(tile)), x, y);
+    VDP_setTileMapXY(BG_A, TILE_ATTR_FULL(pal, TRUE, FALSE, FALSE, tileId(tile)), x, y);
 }
 static void restoreBackground(u16 x, u16 y, u16 w, u16 h) {
     u16 xx, yy;
@@ -76,7 +76,7 @@ static void setupTiles(void) {
 static void drawSkyline(void) {
     u16 x, h, bx;
     buildingBackground = 1;
-    VDP_clearPlane(VDP_BG_A, TRUE);
+    VDP_clearPlane(BG_A, TRUE);
     paintRect(0, 0, 40, 28, 1, PAL0);
     /* Fundo noturno e blocos de prédios com janelas em baixa contagem de tiles. */
     for (x = 0; x < 40; x += 4) {
@@ -228,15 +228,19 @@ static void drawTitle(void) {
     VDP_drawText("C: DEFESA   A+B+C: ESPECIAL", 5, 22);
     VDP_drawText("APERTE START", 12, 25);
 }
-int main(void) {
+int main(bool hardReset) {
+    (void)hardReset;
     JOY_init(); VDP_setScreenWidth320(); VDP_setScreenHeight224();
     VDP_setPlaneSize(64, 32, TRUE); VDP_setPalette(PAL0, pal0); VDP_setPalette(PAL1, pal1);
     setupTiles(); state = ST_TITLE; drawTitle();
     { static GameState drawnEnd = ST_TITLE;
     while (1) {
-        previousButtons = buttons; buttons = JOY_readJoypad(JOY_1); frameCounter++;
+        previousButtons = buttons;
+        JOY_update();
+        buttons = JOY_readJoypad(JOY_1);
+        frameCounter++;
         if (state == ST_TITLE) {
-            if (buttons & BUTTON_START) { initGame(); state = ST_PLAY; }
+            if (buttons & BUTTON_START) { initGame(); state = ST_PLAY; renderGame(); }
         } else if (state == ST_PLAY) {
             updatePlayer(); updateEnemies(); renderGame();
         } else {
@@ -252,9 +256,9 @@ int main(void) {
             }
                 drawnEnd = state;
             }
-            if (buttons & BUTTON_START) { initGame(); state = ST_PLAY; }
+            if (buttons & BUTTON_START) { initGame(); state = ST_PLAY; renderGame(); }
         }
-        VDP_waitVSync();
+        SYS_doVBlankProcess();
     }
     }
     return 0;
