@@ -3,7 +3,7 @@ on:
   push:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,9 +23,15 @@ jobs:
           set -euxo pipefail
           make rom
           test -s build/DREVKANO_A_ULTIMA_QUEBRA.bin
-          file build/DREVKANO_A_ULTIMA_QUEBRA.bin || true
           sha256sum build/DREVKANO_A_ULTIMA_QUEBRA.bin
       - uses: actions/upload-artifact@v4
         with:
           name: DREVKANO-Mega-Drive-ROM
           path: build/DREVKANO_A_ULTIMA_QUEBRA.bin
+      - name: Publish downloadable ROM release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: rom-build-${{ github.run_number }}
+          name: DREVKANO ROM build ${{ github.run_number }}
+          files: build/DREVKANO_A_ULTIMA_QUEBRA.bin
+          make_latest: true
