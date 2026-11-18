@@ -1,0 +1,31 @@
+name: Build DREVKANO ROM
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install SGDK-compatible Marsdev toolchain
+        run: |
+          set -euxo pipefail
+          mkdir -p "$HOME/marsdev"
+          curl -L --fail --retry 3 'https://github.com/andwn/marsdev/releases/download/v1.0.0-rc1/marsdev-v1.0.0-rc1-linux-x86_64.tar.xz' -o /tmp/marsdev.tar.xz
+          tar -xJf /tmp/marsdev.tar.xz -C "$HOME/marsdev"
+          echo "MARSDEV=$HOME/marsdev/mars" >> "$GITHUB_ENV"
+          echo "GDK=$HOME/marsdev/mars/m68k-elf" >> "$GITHUB_ENV"
+          echo "$HOME/marsdev/mars/m68k-elf/bin" >> "$GITHUB_PATH"
+      - name: Compile ROM
+        run: |
+          set -euxo pipefail
+          make rom
+          test -s build/DREVKANO_A_ULTIMA_QUEBRA.bin
+          file build/DREVKANO_A_ULTIMA_QUEBRA.bin || true
+          sha256sum build/DREVKANO_A_ULTIMA_QUEBRA.bin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DREVKANO-Mega-Drive-ROM
+          path: build/DREVKANO_A_ULTIMA_QUEBRA.bin
