@@ -6,7 +6,7 @@ Jogo original para Sega Mega Drive / Genesis, escrito em C com SGDK. A imagem en
 
 O primeiro marco é uma fase curta em desenvolvimento com título, movimentação em profundidade, inimigos que perseguem e atacam, soco, chute, defesa, golpe especial, salto, vida, pontuação e estados de vitória/derrota/reinício. A arte é uma composição provisória de blocos/tiles desenhados por código e os sons são tons PSG simples. **Não é ainda o jogo completo pedido:** faltam sprites finais de pixel art e todas as animações refinadas (corrida, golpes, queda), cenários com obstáculos sólidos e scroll, música original composta, mais fases e testes em emulador/hardware.
 
-A ROM só deve ser considerada gerada quando o workflow `Build DREVKANO ROM` terminar com sucesso e salvar o artefato `DREVKANO-Mega-Drive-ROM`. O sucesso da compilação não equivale a teste de gameplay em emulador ou console.
+O loop principal atualiza o controle com `JOY_update()` e executa `SYS_doVBlankProcess()` a cada quadro, para manter START e demais entradas sincronizados. A compilação validada não substitui o teste visual num emulador ou console.
 
 ## Controles planejados/implementados
 
