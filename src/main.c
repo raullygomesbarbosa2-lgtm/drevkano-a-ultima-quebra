@@ -29,6 +29,10 @@ static Enemy enemies[MAX_ENEMIES];
 static u16 frameCounter, buttons, previousButtons;
 static s16 oldPlayerX, oldPlayerY;
 static s16 oldEnemyX[MAX_ENEMIES], oldEnemyY[MAX_ENEMIES];
+static u8 bgTiles[40 * 28];
+static u16 buildingBackground;
+static s16 oldFxX, oldFxY;
+static u16 oldFx;
 
 static const u16 pal0[16] = {
     RGB24_TO_VDPCOLOR(0x090c20), RGB24_TO_VDPCOLOR(0x10182d), RGB24_TO_VDPCOLOR(0x17233c), RGB24_TO_VDPCOLOR(0x26334e),
@@ -45,7 +49,14 @@ static const u16 pal1[16] = {
 
 static u16 tileId(u16 color) { return TILE_USER_INDEX + color; }
 static void putTile(u16 x, u16 y, u16 tile, u16 pal) {
+    if (buildingBackground && x < 40 && y < 28) bgTiles[y * 40 + x] = (u8)tile;
     VDP_setTileMapXY(VDP_BG_A, TILE_ATTR_FULL(pal, TRUE, FALSE, FALSE, tileId(tile)), x, y);
+}
+static void restoreBackground(u16 x, u16 y, u16 w, u16 h) {
+    u16 xx, yy;
+    for (yy = y; yy < y + h && yy < 28; yy++)
+        for (xx = x; xx < x + w && xx < 40; xx++)
+            putTile(xx, yy, bgTiles[yy * 40 + xx], PAL0);
 }
 static void paintRect(u16 x, u16 y, u16 w, u16 h, u16 tile, u16 pal) {
     u16 xx, yy;
@@ -64,6 +75,7 @@ static void setupTiles(void) {
 }
 static void drawSkyline(void) {
     u16 x, h, bx;
+    buildingBackground = 1;
     VDP_clearPlane(VDP_BG_A, TRUE);
     paintRect(0, 0, 40, 28, 1, PAL0);
     /* Fundo noturno e blocos de prédios com janelas em baixa contagem de tiles. */
@@ -82,6 +94,7 @@ static void drawSkyline(void) {
     /* Poças/neon e caixa de energia como obstáculos visuais na rua. */
     paintRect(9, 18, 3, 1, 9, PAL0);
     paintRect(25, 17, 2, 2, 11, PAL0);
+    buildingBackground = 0;
 }
 static void drawActor(s16 x, s16 y, u16 body, u16 trim, u16 facing, u16 anim) {
     u16 tx = (u16)(x / 8), ty = (u16)(y / 8);
@@ -187,10 +200,12 @@ static void updateEnemies(void) {
 }
 static void renderGame(void) {
     u16 i;
-    /* Restore only previous actor footprints; keep the static background untouched. */
-    paintRect((u16)(oldPlayerX / 8), (u16)((oldPlayerY - 24) / 8), 2, 4, 1, PAL0);
+    /* Restore previous actor/effect footprints to the original background tiles. */
+    restoreBackground((u16)(oldPlayerX / 8), (u16)((oldPlayerY - 24) / 8), 2, 4);
     for (i = 0; i < MAX_ENEMIES; i++)
-        paintRect((u16)(oldEnemyX[i] / 8), (u16)((oldEnemyY[i] - 24) / 8), 2, 4, 1, PAL0);
+        restoreBackground((u16)(oldEnemyX[i] / 8), (u16)((oldEnemyY[i] - 24) / 8), 2, 4);
+    if (oldFx) restoreBackground((u16)oldFxX, (u16)oldFxY, 2, 1);
+    oldFx = 0;
     for (i = 0; i < MAX_ENEMIES; i++) if (enemies[i].active)
         drawActor(enemies[i].x, enemies[i].y - 24, 8 + enemies[i].kind, 5 + enemies[i].kind, (p.x > enemies[i].x), frameCounter >> 4);
     if (!p.invuln || (frameCounter & 2)) drawActor(p.x, p.y - 24, 5, 4, p.facing, frameCounter >> 3);
@@ -198,7 +213,8 @@ static void renderGame(void) {
     for (i = 0; i < MAX_ENEMIES; i++) { oldEnemyX[i] = enemies[i].x; oldEnemyY[i] = enemies[i].y; }
     if (p.attack_timer > 4) {
         s16 fx = p.x + (p.facing ? 22 : -14);
-        paintRect((u16)(fx / 8), (u16)((p.y - 16) / 8), (p.attack == 3) ? 2 : 1, 1, (p.attack == 3) ? 9 : 4, PAL0);
+        oldFxX = (s16)(fx / 8); oldFxY = (s16)((p.y - 16) / 8); oldFx = 1;
+        paintRect((u16)oldFxX, (u16)oldFxY, (p.attack == 3) ? 2 : 1, 1, (p.attack == 3) ? 9 : 4, PAL0);
     }
     drawHud();
 }
